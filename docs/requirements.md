@@ -95,7 +95,7 @@ sync(source → target):
 程序**不存储、不管理任何 token**。凭据来源为本机已登录的 `gh`：
 
 - 取凭据：`gh auth token --user <account>` —— **无状态**地获取任意已登录账号的 token，无需切换 `gh` 的全局 active 账号（避免有状态副作用与并发竞争）。
-- 校验：`starsync doctor` 调用 `gh auth status` 检查账号是否已登录、token scope 是否含 `repo`。
+- 校验：`starsync doctor` 透传 `gh auth status`，展示各账号登录状态与 token scopes 供人工核对（含是否含 `repo`）。
 
 **前置条件**：
 
@@ -160,7 +160,8 @@ starsync version
 | `--dry-run` | bool | false | 只预演不写入 |
 | `--json` | bool | false | stdout 输出结构化 JSON Report |
 | `--yes` | bool | false | 跳过所有交互确认（非交互 / Agent） |
-| `--concurrency` | int | 1 | 写操作并发数，默认串行求稳 |
+
+> 注：写操作当前**串行**执行（最稳），不暴露并发 flag；并发是未来扩展，见第 16 节。
 
 ---
 
@@ -172,7 +173,7 @@ starsync version
 | **结构化输出** | `--json` 时 stdout 输出机器可读 Report |
 | **退出码** | `0` 全部成功 / `1` 运行错误（如 gh 未登录、参数错误）/ `2` 部分条目失败 |
 | **非交互** | `--dry-run` 预演、`--yes` 免确认 |
-| **自检** | `starsync doctor` 输出各账号登录状态与 scope 可用性 |
+| **自检** | `starsync doctor` 透传 `gh auth status`，展示各账号登录状态与 token scopes |
 | **幂等** | 重复运行结果稳定，无副作用累积 |
 
 ### JSON Report 结构
@@ -189,7 +190,7 @@ starsync version
   "removed": [],
   "skipped_already": 28,
   "failed": [
-    { "repo": "owner/private-repo", "error": "404 Not Found（目标账号无访问权）" }
+    { "item": "owner/private-repo", "error": "404 Not Found（目标账号无访问权）" }
   ],
   "counts": { "added": 122, "removed": 0, "failed": 1 }
 }
@@ -203,7 +204,7 @@ starsync version
 
 - **分页**：list starred 用 `GET /user/starred?per_page=100`，按 `Link` header 翻页直至取完。
 - **写操作限流**：`PUT/DELETE /user/starred/{owner}/{repo}`（成功返回 204）。GitHub 对快速写操作有 **secondary rate limit**，因此：
-  - 默认**串行**（`--concurrency=1`）执行写操作，最稳。
+  - 默认**串行**执行写操作，最稳（并发暂未实现，见第 16 节）。
   - 遇 `403 / 429` 时读取 `Retry-After`，做**指数退避 + 重试**。
 - 认证后主 rate limit 为 5000 req/h，同步数百个 star 在额度内。
 
@@ -270,4 +271,5 @@ starSync/
 - `starsync sync gists`：新增 `GistSyncer` 实现。
 - `starsync sync following`：新增 `FollowingSyncer` 实现。
 - 二者均只需新增文件 + 注册，core 引擎不变。
+- `--concurrency`：写操作并发。当前串行最稳；真有性能需求时再加（需配合 GitHub secondary rate limit 的限流退避）。
 ```

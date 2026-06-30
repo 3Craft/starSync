@@ -1,0 +1,9 @@
+# 二进制
+/starsync
+*.exe
+
+# 系统
+.DS_Store
+
+# subagent-driven 执行的 scratch（进度 ledger）
+/.superpowers/

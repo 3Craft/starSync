@@ -110,3 +110,25 @@ func TestSync_ItemFailureRecordedNotFatal(t *testing.T) {
 		t.Fatalf("a/2 应成功新增: %v", rep.Added)
 	}
 }
+
+func TestSync_CountsAggregation(t *testing.T) {
+	f := newFake()
+	f.data["src"] = Set{"a/1": {}, "a/2": {}}
+	f.data["dst"] = Set{"a/1": {}, "a/9": {}} // a/1 已有（skipped），a/9 多余，a/2 需新增
+	f.addErr = map[Item]error{}
+
+	rep, err := Sync(context.Background(), Account{"src"}, Account{"dst"}, f, ModeMirror, false)
+	if err != nil {
+		t.Fatalf("意外错误: %v", err)
+	}
+	// a/2 新增，a/9 删除，无失败
+	if rep.Counts.Added != 1 {
+		t.Fatalf("Counts.Added 应为 1，实际 %d", rep.Counts.Added)
+	}
+	if rep.Counts.Removed != 1 {
+		t.Fatalf("Counts.Removed 应为 1，实际 %d", rep.Counts.Removed)
+	}
+	if rep.Counts.Failed != 0 {
+		t.Fatalf("Counts.Failed 应为 0，实际 %d", rep.Counts.Failed)
+	}
+}

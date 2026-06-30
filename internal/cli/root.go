@@ -12,10 +12,9 @@ import (
 // exitError 承载期望的进程退出码。
 type exitError struct {
 	code int
-	msg  string
 }
 
-func (e *exitError) Error() string { return e.msg }
+func (e *exitError) Error() string { return "" }
 
 // Execute 构建并运行 CLI，返回进程退出码。
 func Execute() int {

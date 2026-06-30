@@ -75,6 +75,7 @@ func Sync(ctx context.Context, src, dst Account, s Syncer, mode Mode, dryRun boo
 		}
 	}
 
+	rep.Counts = Counts{Added: len(rep.Added), Removed: len(rep.Removed), Failed: len(rep.Failed)}
 	return rep, nil
 }
 

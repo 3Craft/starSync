@@ -49,7 +49,12 @@ func newSyncStarsCmd() *cobra.Command {
 			}
 			ghc := gh.New()
 			syncer := stars.New(ghc.TokenFor)
-			return runPairs(cmd.Context(), syncer, pairs, dryRun, asJSON, yes)
+			// 共享 stdin reader，避免多个 mirror pair 各自新建 reader 导致预读丢弃。
+			stdinR := bufio.NewReader(os.Stdin)
+			confirm := func(from, to string, removed []syncpkg.Item) bool {
+				return defaultConfirm(stdinR, from, to, removed)
+			}
+			return runPairs(cmd.Context(), syncer, pairs, dryRun, asJSON, yes, confirm)
 		},
 	}
 	f := cmd.Flags()
@@ -92,17 +97,28 @@ func resolvePairs(from string, to []string, cfgPath string, mirror bool) ([]pair
 }
 
 // runPairs 串行执行所有 pair，按结果决定退出码。
-func runPairs(ctx context.Context, syncer syncpkg.Syncer, pairs []pair, dryRun, asJSON, yes bool) error {
-	var reports []syncpkg.Report
+// confirm 仅在 mirror 且 !dryRun 且 !yes 且存在待删条目时调用；返回 false 表示跳过该 pair。
+func runPairs(ctx context.Context, syncer syncpkg.Syncer, pairs []pair, dryRun, asJSON, yes bool, confirm func(from, to string, removed []syncpkg.Item) bool) error {
+	// #5：确保空结果序列化为 [] 而非 null。
+	reports := []syncpkg.Report{}
 	var runErr, itemFail bool
 
 	for _, p := range pairs {
 		mode := syncpkg.ModeUnion
 		if p.mirror {
 			mode = syncpkg.ModeMirror
-			if !dryRun && !yes && !confirmMirror(p.from, p.to) {
-				fmt.Fprintf(os.Stderr, "跳过 %s → %s（用户取消镜像）\n", p.from, p.to)
-				continue
+			// 确认逻辑下沉到差集计算之后（破坏性操作知情同意）。
+			if !dryRun && !yes {
+				dryRep, err := syncpkg.Sync(ctx, syncpkg.Account{User: p.from}, syncpkg.Account{User: p.to}, syncer, mode, true)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "  预演失败: %v\n", err)
+					runErr = true
+					continue
+				}
+				if len(dryRep.Removed) > 0 && !confirm(p.from, p.to, dryRep.Removed) {
+					fmt.Fprintf(os.Stderr, "跳过 %s → %s（用户取消镜像）\n", p.from, p.to)
+					continue
+				}
 			}
 		}
 		fmt.Fprintf(os.Stderr, "同步 stars: %s → %s（%s）\n", p.from, p.to, mode)
@@ -139,10 +155,14 @@ func runPairs(ctx context.Context, syncer syncpkg.Syncer, pairs []pair, dryRun, 
 	return nil
 }
 
-// confirmMirror 在 stderr 提示并从 stdin 读取确认。
-func confirmMirror(from, to string) bool {
-	fmt.Fprintf(os.Stderr, "⚠️  镜像模式将取消 %s 上 %s 没有 star 的仓库。输入 yes 确认: ", to, from)
-	line, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+// defaultConfirm 向 stderr 打印待删清单，从 r 读取确认。
+func defaultConfirm(r *bufio.Reader, from, to string, removed []syncpkg.Item) bool {
+	fmt.Fprintf(os.Stderr, "⚠️ 镜像将取消 %s 上的 %d 个 star：\n", to, len(removed))
+	for _, item := range removed {
+		fmt.Fprintf(os.Stderr, "  - %s\n", item)
+	}
+	fmt.Fprintf(os.Stderr, "输入 yes 确认: ")
+	line, _ := r.ReadString('\n')
 	return strings.TrimSpace(line) == "yes"
 }
 

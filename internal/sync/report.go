@@ -6,6 +6,13 @@ type Failure struct {
 	Error string `json:"error"`
 }
 
+// Counts 聚合本次同步的统计数量。
+type Counts struct {
+	Added   int `json:"added"`
+	Removed int `json:"removed"`
+	Failed  int `json:"failed"`
+}
+
 // Report 是一次单向同步的结果。
 type Report struct {
 	Resource     string    `json:"resource"`
@@ -19,6 +26,7 @@ type Report struct {
 	Removed      []Item    `json:"removed"`
 	Skipped      int       `json:"skipped_already"`
 	Failed       []Failure `json:"failed"`
+	Counts       Counts    `json:"counts"`
 }
 
 // HasFailures 报告是否存在条目级失败。

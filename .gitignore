@@ -7,3 +7,6 @@
 
 # subagent-driven 执行的 scratch（进度 ledger）
 /.superpowers/
+
+# GoReleaser 输出
+/dist/

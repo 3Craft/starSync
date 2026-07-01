@@ -36,9 +36,13 @@ func (m Mode) String() string {
 }
 
 // Syncer 抽象"一类可同步的 GitHub 资源"。Stars 是第一个实现。
+//
+// Add/Remove 在 dst 上执行；src 是为了支持"内容复制型"同步
+// （如 gists：dst 上不存在该 gist，需从 src 拉内容再创建）。
+// 对"标记型"同步（stars / following）而言，src 参数可忽略。
 type Syncer interface {
 	Name() string
 	List(ctx context.Context, acct Account) (Set, error)
-	Add(ctx context.Context, acct Account, item Item) error
-	Remove(ctx context.Context, acct Account, item Item) error
+	Add(ctx context.Context, src, dst Account, item Item) error
+	Remove(ctx context.Context, src, dst Account, item Item) error
 }

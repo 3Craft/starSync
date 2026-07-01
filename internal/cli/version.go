@@ -6,15 +6,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Version 可在构建时通过 -ldflags "-X .../cli.Version=x.y.z" 注入。
-var Version = "dev"
+// Version / Commit / Date 均可通过构建期 ldflags 注入（GoReleaser 默认行为）。
+// 默认值 "dev" / "none" / "unknown" 用于本地 `go build` 无注入的场景。
+var (
+	Version = "dev"
+	Commit  = "none"
+	Date    = "unknown"
+)
 
 func newVersionCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
 		Short: "输出版本号",
 		RunE: func(_ *cobra.Command, _ []string) error {
-			fmt.Println(Version)
+			fmt.Printf("%s (commit %s, built %s)\n", Version, Commit, Date)
 			return nil
 		},
 	}

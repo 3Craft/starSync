@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	syncpkg "github.com/xsharp/starsync/internal/sync"
+	syncpkg "github.com/3Craft/starSync/internal/sync"
 )
 
 // cliSyncer 是 cli 包内用于测试 runPairs 的内存 Syncer 实现。
@@ -18,7 +18,7 @@ func newCliSyncer() *cliSyncer {
 	return &cliSyncer{data: map[string]syncpkg.Set{}}
 }
 
-func (c *cliSyncer) Name() string { return "stars" }
+func (c *cliSyncer) Name() string { return "test" }
 
 func (c *cliSyncer) set(u string) syncpkg.Set {
 	if c.data[u] == nil {
@@ -31,13 +31,13 @@ func (c *cliSyncer) List(_ context.Context, a syncpkg.Account) (syncpkg.Set, err
 	return c.set(a.User), nil
 }
 
-func (c *cliSyncer) Add(_ context.Context, a syncpkg.Account, it syncpkg.Item) error {
+func (c *cliSyncer) Add(_ context.Context, _, a syncpkg.Account, it syncpkg.Item) error {
 	c.set(a.User).Add(it)
 	c.adds = append(c.adds, a.User+":"+string(it))
 	return nil
 }
 
-func (c *cliSyncer) Remove(_ context.Context, a syncpkg.Account, it syncpkg.Item) error {
+func (c *cliSyncer) Remove(_ context.Context, _, a syncpkg.Account, it syncpkg.Item) error {
 	delete(c.set(a.User), it)
 	c.rms = append(c.rms, a.User+":"+string(it))
 	return nil
@@ -55,8 +55,9 @@ func TestRunPairs_MirrorConfirmFalse_SkipsRemove(t *testing.T) {
 	s.data["src"] = syncpkg.Set{"a/1": {}}
 	s.data["dst"] = syncpkg.Set{"a/1": {}, "a/9": {}} // a/9 需删除
 
-	pairs := []pair{{from: "src", to: "dst", mirror: true}}
-	err := runPairs(context.Background(), s, pairs, false, false, false, confirmFalse)
+	pairs := []pair{{resource: "test", from: "src", to: "dst", mirror: true}}
+	syncers := map[string]syncpkg.Syncer{"test": s}
+	err := runPairs(context.Background(), syncers, pairs, false, false, false, 1, confirmFalse)
 	if err != nil {
 		t.Fatalf("意外错误: %v", err)
 	}
@@ -75,8 +76,9 @@ func TestRunPairs_MirrorConfirmTrue_ExecutesRemove(t *testing.T) {
 	s.data["src"] = syncpkg.Set{"a/1": {}}
 	s.data["dst"] = syncpkg.Set{"a/1": {}, "a/9": {}} // a/9 需删除
 
-	pairs := []pair{{from: "src", to: "dst", mirror: true}}
-	err := runPairs(context.Background(), s, pairs, false, false, false, confirmTrue)
+	pairs := []pair{{resource: "test", from: "src", to: "dst", mirror: true}}
+	syncers := map[string]syncpkg.Syncer{"test": s}
+	err := runPairs(context.Background(), syncers, pairs, false, false, false, 1, confirmTrue)
 	if err != nil {
 		t.Fatalf("意外错误: %v", err)
 	}
@@ -100,8 +102,9 @@ func TestRunPairs_MirrorNoRemoved_SkipsConfirm(t *testing.T) {
 		return false
 	}
 
-	pairs := []pair{{from: "src", to: "dst", mirror: true}}
-	if err := runPairs(context.Background(), s, pairs, false, false, false, confirm); err != nil {
+	pairs := []pair{{resource: "test", from: "src", to: "dst", mirror: true}}
+	syncers := map[string]syncpkg.Syncer{"test": s}
+	if err := runPairs(context.Background(), syncers, pairs, false, false, false, 1, confirm); err != nil {
 		t.Fatalf("意外错误: %v", err)
 	}
 	if confirmCalled {
@@ -110,5 +113,22 @@ func TestRunPairs_MirrorNoRemoved_SkipsConfirm(t *testing.T) {
 	// a/2 应被新增
 	if !s.set("dst").Has("a/2") {
 		t.Fatal("a/2 应被同步到 dst")
+	}
+}
+
+// TestRunPairs_UnknownResource_SkipsPair 验证遇到未知 resource 时跳过该 pair 但不中断。
+func TestRunPairs_UnknownResource_SkipsPair(t *testing.T) {
+	s := newCliSyncer()
+	s.data["src"] = syncpkg.Set{"a/1": {}}
+	s.data["dst"] = syncpkg.Set{}
+
+	pairs := []pair{{resource: "unknown", from: "src", to: "dst"}}
+	syncers := map[string]syncpkg.Syncer{"test": s}
+	err := runPairs(context.Background(), syncers, pairs, false, false, true, 1, confirmTrue)
+	if err == nil {
+		t.Fatalf("未知 resource 应返回 exitError(1)")
+	}
+	if len(s.adds) != 0 {
+		t.Fatalf("未知 resource 时不应写入, 实际 adds=%v", s.adds)
 	}
 }

@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/xsharp/starsync/internal/cli"
+	"github.com/3Craft/starSync/internal/cli"
 )
 
 func main() {

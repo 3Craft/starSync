@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- **Module path**：`github.com/xsharp/starsync`（执行时可改为用户实际 repo owner，全局替换 import 路径即可）。
+- **Module path**：`github.com/3Craft/starSync`（执行时可改为用户实际 repo owner，全局替换 import 路径即可）。
 - **Go 版本**：≥ 1.22。
 - **凭据**：程序不存储任何 token；一律 `gh auth token --user <account>` 现取。
 - **流分离**：stdout 只放结果数据；进度、日志、确认提示一律 stderr。
@@ -81,13 +81,13 @@ go.mod
 - Create: `go.mod`、目录结构
 
 **Interfaces:**
-- Produces: module `github.com/xsharp/starsync`，已就绪的 `cobra`、`yaml.v3` 依赖；空目录树供各 agent 落文件。
+- Produces: module `github.com/3Craft/starSync`，已就绪的 `cobra`、`yaml.v3` 依赖；空目录树供各 agent 落文件。
 
 - [ ] **Step 1: 初始化 module 与目录**
 
 ```bash
 cd /Users/xsharp/Workspace/3Craft/starSync
-go mod init github.com/xsharp/starsync
+go mod init github.com/3Craft/starSync
 mkdir -p cmd/starsync internal/sync internal/gh internal/github internal/config internal/stars internal/cli
 ```
 
@@ -956,7 +956,7 @@ import (
 	"context"
 	"testing"
 
-	syncpkg "github.com/xsharp/starsync/internal/sync"
+	syncpkg "github.com/3Craft/starSync/internal/sync"
 )
 
 // fakeClient 是 StarClient 的内存实现。
@@ -1022,8 +1022,8 @@ package stars
 import (
 	"context"
 
-	"github.com/xsharp/starsync/internal/github"
-	syncpkg "github.com/xsharp/starsync/internal/sync"
+	"github.com/3Craft/starSync/internal/github"
+	syncpkg "github.com/3Craft/starSync/internal/sync"
 )
 
 // TokenFunc 按账号名返回 token（通常为 gh.Client.TokenFor）。
@@ -1218,10 +1218,10 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/xsharp/starsync/internal/config"
-	"github.com/xsharp/starsync/internal/gh"
-	"github.com/xsharp/starsync/internal/stars"
-	syncpkg "github.com/xsharp/starsync/internal/sync"
+	"github.com/3Craft/starSync/internal/config"
+	"github.com/3Craft/starSync/internal/gh"
+	"github.com/3Craft/starSync/internal/stars"
+	syncpkg "github.com/3Craft/starSync/internal/sync"
 )
 
 // pair 是展开后的单向同步任务。
@@ -1379,7 +1379,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/xsharp/starsync/internal/gh"
+	"github.com/3Craft/starSync/internal/gh"
 )
 
 func newDoctorCmd() *cobra.Command {
@@ -1432,7 +1432,7 @@ package main
 import (
 	"os"
 
-	"github.com/xsharp/starsync/internal/cli"
+	"github.com/3Craft/starSync/internal/cli"
 )
 
 func main() {

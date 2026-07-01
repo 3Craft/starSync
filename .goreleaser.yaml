@@ -1,0 +1,107 @@
+# starSync GoReleaser 配置
+# 文档：https://goreleaser.com/customization/
+#
+# 用法（本地 snapshot 验证，不发布）：
+#   goreleaser release --snapshot --clean
+#
+# 用法（实际发布，先确保 token 与远端权限）：
+#   git tag v0.1.0 && git push --tags
+#   CI（.github/workflows/release.yml）会自动跑 GoReleaser。
+#
+version: 2
+
+project_name: starsync
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - main: ./cmd/starsync
+    binary: starsync
+    id: starsync
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    # 注入版本号与构建时间到 cli 包变量
+    ldflags:
+      - -s -w
+      - -X github.com/3Craft/starSync/internal/cli.Version={{.Version}}
+      - -X github.com/3Craft/starSync/internal/cli.Commit={{.Commit}}
+      - -X github.com/3Craft/starSync/internal/cli.Date={{.Date}}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    # windows 平台用 zip 替代 tar.gz
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - docs/example-syncs.yaml
+      - src: LICENSE*
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  use: git
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
+      - "^style:"
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Breaking Changes
+      regexp: '^.*(\(BREAKING CHANGE\)|!):.*$'
+      order: 0
+    - title: Features
+      regexp: '^.*feat(\(.+\))?!?:.*$'
+      order: 1
+    - title: Bug fixes
+      regexp: '^.*fix(\(.+\))?:.*$'
+      order: 2
+    - title: Performance
+      regexp: '^.*perf(\(.+\))?:.*$'
+      order: 3
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: 3Craft
+    name: starSync
+  prerelease: auto
+  draft: false
+  name_template: "{{ .ProjectName }} v{{ .Version }}"
+  header: |
+    ## starSync {{ .Version }}
+
+    详见 README 了解用法，CHANGELOG 见本 release 页面。
+  footer: |
+    ## 安装
+
+    见 README 的 Installation 章节。

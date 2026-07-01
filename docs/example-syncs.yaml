@@ -1,11 +1,15 @@
 # starSync 多对多同步配置示例
 #
-# 用法：starsync sync stars --config docs/example-syncs.yaml
+# 用法（每个 subcommand 只处理对应 resource 的条目）：
+#   starsync sync stars     --config docs/example-syncs.yaml
+#   starsync sync gists     --config docs/example-syncs.yaml
+#   starsync sync following --config docs/example-syncs.yaml
 #
-# 本文件只描述"谁的 star 同步给谁"，不含任何 token——
+# 本文件只描述"谁的什么资源同步给谁"，不含任何 token——
 # 凭据由 gh 提供（gh auth token --user <账号>），所以这里只写账号名即可。
 
 syncs:
+  # ───── stars ─────
   # xsharp 的 star 同步给 justdn 和 trendcms（默认 union：只增不删）
   - from: xsharp
     to: [justdn, trendcms]
@@ -14,3 +18,15 @@ syncs:
   - from: trendcms
     to: [xsharp]
     # mirror: true   # 取消注释启用镜像模式（含 unstar，破坏性，谨慎使用）
+
+  # ───── gists ─────
+  # 按 description 匹配；空 description 的 gist 不参与同步（避免歧义）
+  - resource: gists
+    from: xsharp
+    to: [justdn]
+
+  # ───── following ─────
+  # 同步关注列表
+  - resource: following
+    from: xsharp
+    to: [justdn]

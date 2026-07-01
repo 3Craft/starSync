@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	syncpkg "github.com/xsharp/starsync/internal/sync"
+	syncpkg "github.com/3Craft/starSync/internal/sync"
 )
 
 // fakeClient 是 StarClient 的内存实现。
@@ -41,7 +41,7 @@ func TestAdd_CallsStar(t *testing.T) {
 		func(string) (string, error) { return "tok", nil },
 		func(string) StarClient { return fc },
 	)
-	if err := s.Add(context.Background(), syncpkg.Account{User: "bob"}, "a/9"); err != nil {
+	if err := s.Add(context.Background(), syncpkg.Account{User: "alice"}, syncpkg.Account{User: "bob"}, "a/9"); err != nil {
 		t.Fatalf("意外错误: %v", err)
 	}
 	if len(fc.starred) != 1 || fc.starred[0] != "a/9" {

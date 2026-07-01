@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/xsharp/starsync/internal/gh"
+	"github.com/3Craft/starSync/internal/gh"
 )
 
 func newDoctorCmd() *cobra.Command {

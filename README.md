@@ -24,6 +24,7 @@
 
 ```bash
 brew tap 3Craft/starsync
+brew trust 3Craft/starsync      # 新版 Homebrew 需信任第三方 tap 才能安装 cask
 brew install --cask starsync
 ```
 

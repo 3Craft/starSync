@@ -105,3 +105,33 @@ release:
     ## 安装
 
     见 README 的 Installation 章节。
+
+# Homebrew tap：自动把 macOS / Linux 产物推到 3Craft/homebrew-starsync
+# 用户安装方式：brew tap 3Craft/starsync && brew install starsync
+# 前提：先在 GitHub UI 手动建 3Craft/homebrew-starsync repo（空 repo）
+# 注：v2.16+ 把 brews 合并到 homebrew_casks，CLI 工具也用这个
+homebrew_casks:
+  - name: starsync
+    repository:
+      owner: 3Craft
+      name: homebrew-starsync
+      # 默认 GITHUB_TOKEN 只能写当前仓库，推送到 tap 仓库需专用 PAT
+      # 在 GitHub 建一个能写 homebrew-starsync 的 token，存为 secret HOMEBREW_TAP_TOKEN
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    commit_author:
+      name: github-actions
+      email: 41898282+github-actions[bot]@users.noreply.github.com
+    commit_msg_template: "brew: update {{ .ProjectName }} to {{ .Version }}"
+    homepage: "https://github.com/3Craft/starSync"
+    description: "在多个 GitHub 账号之间同步 star 的 CLI（凭据委托 gh）"
+    binaries:
+      - starsync
+    # starsync 委托 gh 管理各账号凭据，声明为运行时依赖
+    dependencies:
+      - formula: gh
+    # 二进制未签名/未公证：安装后去掉 quarantine，否则 macOS Gatekeeper 会拦首次运行
+    custom_block: |
+      postflight do
+        system_command "/usr/bin/xattr",
+                       args: ["-dr", "com.apple.quarantine", "#{staged_path}/starsync"]
+      end

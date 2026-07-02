@@ -29,4 +29,7 @@ jobs:
           version: latest
           args: release --clean
         env:
+          # 创建 GitHub Release 用（当前仓库，自动注入）
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 推送 Homebrew cask 到 3Craft/homebrew-starsync 用（需手动创建 PAT 并存为 secret）
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}

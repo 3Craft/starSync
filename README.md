@@ -20,11 +20,14 @@
 
 ## 安装
 
-### Homebrew（macOS / Linux）
+### Homebrew（macOS）
 
 ```bash
-brew install 3Craft/tap/starsync
+brew tap 3Craft/starsync
+brew install --cask starsync
 ```
+
+> Homebrew cask 仅支持 macOS；Linux 用户请用下方的 `go install` 或预编译二进制。
 
 ### `go install`
 
